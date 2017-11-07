@@ -17,13 +17,12 @@
  */
 package org.apache.hadoop.hbase.ipc;
 
-import java.io.IOException;
-
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.query.QueryServicesOptions;
 
-import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 
 /**
  * {@link RpcScheduler} that first checks to see if this is an index or metedata update before passing off the
@@ -45,10 +44,10 @@ public class PhoenixRpcScheduler extends RpcScheduler {
 
     public PhoenixRpcScheduler(Configuration conf, RpcScheduler delegate, int indexPriority, int metadataPriority) {
         // copied from org.apache.hadoop.hbase.ipc.SimpleRpcScheduler in HBase 0.98.4
-    	int indexHandlerCount = conf.getInt(QueryServices.INDEX_HANDLER_COUNT_ATTRIB, QueryServicesOptions.DEFAULT_INDEX_HANDLER_COUNT);
-    	int metadataHandlerCount = conf.getInt(QueryServices.METADATA_HANDLER_COUNT_ATTRIB, QueryServicesOptions.DEFAULT_INDEX_HANDLER_COUNT);
-        int maxIndexQueueLength =  conf.getInt(CALLQUEUE_LENGTH_CONF_KEY, indexHandlerCount*DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER);
-        int maxMetadataQueueLength =  conf.getInt(CALLQUEUE_LENGTH_CONF_KEY, metadataHandlerCount*DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER);
+        int indexHandlerCount = conf.getInt(QueryServices.INDEX_HANDLER_COUNT_ATTRIB, QueryServicesOptions.DEFAULT_INDEX_HANDLER_COUNT);
+        int metadataHandlerCount = conf.getInt(QueryServices.METADATA_HANDLER_COUNT_ATTRIB, QueryServicesOptions.DEFAULT_INDEX_HANDLER_COUNT);
+        int maxIndexQueueLength = conf.getInt(CALLQUEUE_LENGTH_CONF_KEY, indexHandlerCount * DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER);
+        int maxMetadataQueueLength = conf.getInt(CALLQUEUE_LENGTH_CONF_KEY, metadataHandlerCount * DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER);
         float callQueuesHandlersFactor = conf.getFloat(CALL_QUEUE_HANDLER_FACTOR_CONF_KEY, 0);
         int numIndexQueues = Math.max(1, Math.round(indexHandlerCount * callQueuesHandlersFactor));
         int numMetadataQueues = Math.max(1, Math.round(metadataHandlerCount * callQueuesHandlersFactor));
@@ -115,15 +114,45 @@ public class PhoenixRpcScheduler extends RpcScheduler {
         return this.delegate.getActiveRpcHandlerCount() + this.indexCallExecutor.getActiveHandlerCount() + this.metadataCallExecutor.getActiveHandlerCount();
     }
 
+    @Override
+    public int getWriteQueueLength() {
+        return this.delegate.getWriteQueueLength();
+    }
+
+    @Override
+    public int getReadQueueLength() {
+        return this.delegate.getReadQueueLength();
+    }
+
+    @Override
+    public int getScanQueueLength() {
+        return this.delegate.getScanQueueLength();
+    }
+
+    @Override
+    public int getActiveWriteRpcHandlerCount() {
+        return this.delegate.getActiveWriteRpcHandlerCount();
+    }
+
+    @Override
+    public int getActiveReadRpcHandlerCount() {
+        return this.delegate.getActiveReadRpcHandlerCount();
+    }
+
+    @Override
+    public int getActiveScanRpcHandlerCount() {
+        return this.delegate.getActiveScanRpcHandlerCount();
+    }
+
     @VisibleForTesting
     public void setIndexExecutorForTesting(RpcExecutor executor) {
         this.indexCallExecutor = executor;
     }
-    
+
     @VisibleForTesting
     public void setMetadataExecutorForTesting(RpcExecutor executor) {
         this.metadataCallExecutor = executor;
     }
-    
-    
+
+
 }
